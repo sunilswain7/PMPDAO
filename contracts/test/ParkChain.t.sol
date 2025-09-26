@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {ParkingMarketplace} from "../src/ParkChain.sol";
 
 contract ParkTest is Test {
+    receive() external payable {}
     ParkingMarketplace public parkingMarketplace;
 
     function setUp() public {
@@ -230,5 +231,69 @@ contract ParkTest is Test {
         
         // This call will revert.
         parkingMarketplace.checkOut(bookingId, "mySecret");
+    }
+
+    function test_RevertIf_BadSecretOnCheckOut() public {
+        uint256 ratePerHourWei = 0.001 ether;
+        bytes32 qrSecretHash = keccak256(abi.encodePacked("mySecret"));
+        
+        uint256 spotId = parkingMarketplace.createSpot(ratePerHourWei, qrSecretHash);
+        
+        uint32 maxHours = 5;
+        uint256 requiredDeposit = ratePerHourWei * uint256(maxHours);
+        
+        uint256 bookingId = parkingMarketplace.bookSpot{value: requiredDeposit}(spotId, maxHours);
+        
+        // First, check in successfully
+        parkingMarketplace.checkIn(bookingId, "mySecret");
+        
+        // Expect the next call to revert.
+        vm.expectRevert("bad secret");
+        
+        // This call will revert.
+        parkingMarketplace.checkOut(bookingId, "wrongSecret");
+    }
+
+    function test_RevertIfBadStatusOnCheckOut() public {
+        uint256 ratePerHourWei = 0.001 ether;
+        bytes32 qrSecretHash = keccak256(abi.encodePacked("mySecret"));
+        
+        uint256 spotId = parkingMarketplace.createSpot(ratePerHourWei, qrSecretHash);
+        
+        uint32 maxHours = 5;
+        uint256 requiredDeposit = ratePerHourWei * uint256(maxHours);
+        
+        uint256 bookingId = parkingMarketplace.bookSpot{value: requiredDeposit}(spotId, maxHours);
+        
+        // Expect the next call to revert.
+        vm.expectRevert("bad status");
+        
+        // This call will revert.
+        parkingMarketplace.checkOut(bookingId, "mySecret");
+    }
+
+    function testFullFlow() public {
+        uint256 ratePerHourWei = 0.001 ether;
+        bytes32 qrSecretHash = keccak256(abi.encodePacked("mySecret"));
+        
+        uint256 spotId = parkingMarketplace.createSpot(ratePerHourWei, qrSecretHash);
+        
+        uint32 maxHours = 5;
+        uint256 requiredDeposit = ratePerHourWei * uint256(maxHours);
+        
+        uint256 bookingId = parkingMarketplace.bookSpot{value: requiredDeposit}(spotId, maxHours);
+        
+        parkingMarketplace.checkIn(bookingId, "mySecret");
+        
+        // Simulate some time passing
+        vm.warp(block.timestamp + 2 hours);
+        
+        parkingMarketplace.checkOut(bookingId, "mySecret");
+        
+        ( , , , , , uint64 checkedInAt, uint64 checkedOutAt, ParkingMarketplace.BookingStatus status) = parkingMarketplace.bookings(bookingId);
+        
+        assertEq(checkedInAt, uint64(block.timestamp - 2 hours));
+        assertEq(checkedOutAt, uint64(block.timestamp));
+        assertEq(uint(status), uint(ParkingMarketplace.BookingStatus.Completed));
     }
 }
