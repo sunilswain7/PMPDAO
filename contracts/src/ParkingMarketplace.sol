@@ -42,6 +42,7 @@ contract ParkingMarketplace is ReentrancyGuard, Ownable2Step {
         require(_feeRecipient != address(0), "fee recipient is zero address");
         feeBps = _feeBps;
         feeRecipient = _feeRecipient;
+        
     }
 
     function createSpot(uint256 ratePerHourWei, bytes32 qrSecretHash) external returns (uint256 spotId) {
