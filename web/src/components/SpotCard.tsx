@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
-import { formatEther, parseEther } from 'viem';
+import { formatEther } from 'viem';
 import ParkingContractInfo from '@/lib/ParkingMarketplace.json';
 
 const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
@@ -39,49 +39,61 @@ export function SpotCard({ spotId, spotData }: SpotCardProps) {
       abi: ParkingContractInfo.abi,
       functionName: 'bookSpot',
       args: [BigInt(spotId), parseInt(maxHours)],
-      value: depositWei, // This is how you send ETH with the transaction
+      value: depositWei,
     });
   };
-  
-  // Don't show the booking button if the connected user is the owner
+
   const isOwner = connectedAddress && connectedAddress.toLowerCase() === owner.toLowerCase();
+  const totalCost = formatEther(ratePerHourWei * BigInt(maxHours || 0));
 
   return (
-    <div className="border border-gray-700 rounded-lg p-4 bg-gray-800 flex flex-col justify-between">
+    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6 flex flex-col justify-between transition-all hover:border-green-500/50">
       <div>
-        <h3 className="text-xl font-bold">Spot #{spotId}</h3>
-        <p className="text-sm text-gray-400 truncate" title={owner}>Owner: {owner}</p>
-        <p className="text-lg font-semibold mt-2">{ratePerHourEth} ETH / hour</p>
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-bold text-green-400">Spot #{spotId}</h3>
+          <p className="text-lg font-semibold text-white">{ratePerHourEth} ETH/hr</p>
+        </div>
+        <p className="text-xs text-gray-500 truncate mt-1" title={owner}>
+          Owner: {owner}
+        </p>
       </div>
-      
+
       {!isOwner && (
-        <form onSubmit={handleBookSpot} className="mt-4">
-          <label htmlFor={`max-hours-${spotId}`} className="block text-sm font-medium text-gray-300">
-            Hours to book
-          </label>
-          <input
-            id={`max-hours-${spotId}`}
-            type="number"
-            min="1"
-            value={maxHours}
-            onChange={(e) => setMaxHours(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm p-2"
-            required
-          />
+        <form onSubmit={handleBookSpot} className="mt-6">
+          <div>
+            <label htmlFor={`max-hours-${spotId}`} className="block text-sm font-medium text-gray-300 mb-1">
+              Hours to Book
+            </label>
+            <input
+              id={`max-hours-${spotId}`}
+              type="number"
+              min="1"
+              value={maxHours}
+              onChange={(e) => setMaxHours(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-600 bg-gray-900 text-white shadow-sm focus:border-green-500 focus:ring-green-500 p-3"
+              required
+              disabled={isPending || isConfirming}
+            />
+          </div>
           <button
             type="submit"
-            disabled={isPending || !connectedAddress}
-            className="mt-4 w-full bg-green-600 hover:bg-green-700 disabled:bg-green-900 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded"
+            disabled={isPending || isConfirming || !connectedAddress}
+            className="mt-4 w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-md transition-colors duration-300"
           >
-            {isPending ? 'Confirming...' : `Book for ${formatEther(ratePerHourWei * BigInt(maxHours || 0))} ETH`}
+            {isPending ? 'Awaiting Signature...' : isConfirming ? 'Booking...' : `Book (${totalCost} ETH)`}
           </button>
-          {isConfirming && <p className="text-yellow-400 text-center mt-2">Booking...</p>}
-          {isConfirmed && <p className="text-green-400 text-center mt-2">Booked successfully!</p>}
+          
+          <div className="h-6 mt-2 text-center">
+            {isConfirming && <p className="text-yellow-400 text-sm">Processing transaction...</p>}
+            {isConfirmed && <p className="text-green-400 text-sm">✅ Booked successfully!</p>}
+          </div>
         </form>
       )}
 
       {isOwner && (
-         <p className="mt-4 text-center text-gray-500 font-bold p-2 bg-gray-700 rounded-md">You are the owner of this spot.</p>
+        <div className="mt-6 text-center text-gray-400 font-medium p-3 bg-gray-900/70 border border-gray-700 rounded-md">
+          You are the owner of this spot.
+        </div>
       )}
     </div>
   );
