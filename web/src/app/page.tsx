@@ -1,53 +1,36 @@
-// web/src/app/bookings/page.tsx
+// web/src/app/page.tsx
 'use client';
-import { useAccount, useReadContract, useReadContracts } from 'wagmi';
+import { useReadContract, useReadContracts } from 'wagmi';
 import ParkingContractInfo from '@/lib/ParkingMarketplace.json';
-import { BookingCard } from '@/components/BookingCard';
-import Link from 'next/link';
-import Image from 'next/image';
+import { SpotCard } from '@/components/SpotCard';
+import Image from 'next/image'; // Import Image component
 
 const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 
-// FIX 1: Define a specific type for the booking data to avoid using `any`.
-type BookingDataTuple = readonly [
-  bigint, // spotId
-  string, // renter
-  bigint, // depositWei
-  bigint, // ratePerHourWei
-  number, // maxHours
-  bigint, // checkedInAt
-  bigint, // checkedOutAt
-  number  // status
-];
-
-export default function BookingsPage() {
-  const { address } = useAccount();
-
-  // ... (rest of the hooks are the same)
-  const { data: bookingsCount } = useReadContract({
+export default function Home() {
+  // 1. First, get the total number of spots
+  const { data: spotsCount } = useReadContract({
     address: contractAddress,
     abi: ParkingContractInfo.abi,
-    functionName: 'bookingsCount',
+    functionName: 'spotsCount',
   });
 
-  const bookingsContracts = Array.from({ length: Number(bookingsCount || 0) }, (_, i) => ({
+  // 2. Then, create an array of contract calls to fetch each spot
+  const spotsContracts = Array.from({ length: Number(spotsCount || 0) }, (_, i) => ({
     address: contractAddress,
     abi: ParkingContractInfo.abi,
-    functionName: 'bookings',
+    functionName: 'spots',
     args: [BigInt(i)],
   }));
 
-  const { data: allBookings, isLoading } = useReadContracts({
-    contracts: bookingsContracts,
+  // 3. Fetch all spots' data in a single batch
+  const { data: spots, isLoading } = useReadContracts({
+    contracts: spotsContracts,
   });
 
-  const myBookings = allBookings
-    ?.map((booking, index) => ({ ...booking, id: index }))
-    .filter(
-      (booking) =>
-        booking.status === 'success' &&
-        booking.result[1]?.toLowerCase() === address?.toLowerCase()
-    );
+  const activeSpots = spots?.filter(
+    (spot) => spot.status === 'success' && spot.result[2] === true
+  );
 
   return (
     <div className="relative min-h-screen">
@@ -57,41 +40,44 @@ export default function BookingsPage() {
         layout="fill"
         objectFit="cover"
         quality={100}
-        className="z-0 opacity-20"
+        className="z-0 opacity-20" // Reduced opacity to keep content readable
       />
       <main className="container mx-auto p-4 md:p-8 relative z-10">
-        <div className="text-left mb-10">
-          <h1 className="text-3xl font-bold text-green-400">My Bookings</h1>
-          <p className="mt-2 text-gray-400">An overview of your past and current parking sessions.</p>
+        {/* Page Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            Decentralized Parking Marketplace
+          </h1>
+          <p className="mt-4 text-lg text-gray-400">
+            Find and book available parking spots securely on the blockchain.
+          </p>
         </div>
 
-        {isLoading && (
-          <div className="text-center text-gray-400">
-            <p>Loading your booking history...</p>
-          </div>
-        )}
+        {/* Spots Grid */}
+        <div>
+          <h2 className="text-2xl font-semibold mb-6 text-green-400 border-b border-gray-700 pb-2">
+            Available Now
+          </h2>
 
-        <div className="space-y-6">
-          {myBookings?.map((booking) => (
-            <BookingCard
-              key={booking.id}
-              bookingId={booking.id}
-              // FIX 1 (continued): Use the new type here instead of `as any`.
-              bookingData={booking.result as BookingDataTuple}
-            />
-          ))}
+          {isLoading && (
+            <div className="text-center text-gray-400">
+              <p>Scanning the network for spots...</p>
+            </div>
+          )}
+
+          {!isLoading && (!activeSpots || activeSpots.length === 0) && (
+            <div className="text-center bg-gray-800 p-8 rounded-lg border border-gray-700">
+              <p className="text-gray-300 font-medium">No active spots available right now.</p>
+              <p className="text-gray-500 text-sm mt-2">Please check back later or consider hosting your own spot!</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {activeSpots?.map((spot, index) => (
+                <SpotCard key={index} spotId={Number(spotsCount) - 1 - index} spotData={spot.result} />
+            ))}
+          </div>
         </div>
-
-        {!isLoading && (!myBookings || myBookings.length === 0) && (
-          <div className="text-center bg-gray-800 p-8 rounded-lg border border-gray-700">
-            <h3 className="text-xl font-medium text-white">No Bookings Found</h3>
-            {/* FIX 2: Replace the apostrophe in "haven't" with `&apos;`. */}
-            <p className="text-gray-400 mt-2 mb-4">It looks like you haven&apos;t booked any spots yet.</p>
-            <Link href="/" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">
-              Find a Spot
-            </Link>
-          </div>
-        )}
       </main>
     </div>
   );
