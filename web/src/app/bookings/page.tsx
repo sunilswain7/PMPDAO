@@ -4,21 +4,32 @@ import { useAccount, useReadContract, useReadContracts } from 'wagmi';
 import ParkingContractInfo from '@/lib/ParkingMarketplace.json';
 import { BookingCard } from '@/components/BookingCard';
 import Link from 'next/link';
-import Image from 'next/image'; // Import Image component
+import Image from 'next/image';
 
 const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+
+// FIX 1: Define a specific type for the booking data to avoid using 'any'.
+type BookingDataTuple = readonly [
+  bigint, // spotId
+  string, // renter
+  bigint, // depositWei
+  bigint, // ratePerHourWei
+  number, // maxHours
+  bigint, // checkedInAt
+  bigint, // checkedOutAt
+  number  // status
+];
 
 export default function BookingsPage() {
   const { address } = useAccount();
 
-  // 1. Get the total number of bookings
+  // Hooks to fetch contract data
   const { data: bookingsCount } = useReadContract({
     address: contractAddress,
     abi: ParkingContractInfo.abi,
     functionName: 'bookingsCount',
   });
 
-  // 2. Prepare the contract calls to fetch all bookings
   const bookingsContracts = Array.from({ length: Number(bookingsCount || 0) }, (_, i) => ({
     address: contractAddress,
     abi: ParkingContractInfo.abi,
@@ -26,12 +37,11 @@ export default function BookingsPage() {
     args: [BigInt(i)],
   }));
 
-  // 3. Fetch all bookings data
   const { data: allBookings, isLoading } = useReadContracts({
     contracts: bookingsContracts,
   });
 
-  // 4. Filter to find bookings for the connected user
+  // Filter bookings for the connected user
   const myBookings = allBookings
     ?.map((booking, index) => ({ ...booking, id: index }))
     .filter(
@@ -67,7 +77,8 @@ export default function BookingsPage() {
             <BookingCard
               key={booking.id}
               bookingId={booking.id}
-              bookingData={booking.result as any}
+              // FIX 1 (continued): Use the new type here instead of 'as any'.
+              bookingData={booking.result as BookingDataTuple}
             />
           ))}
         </div>
@@ -75,7 +86,8 @@ export default function BookingsPage() {
         {!isLoading && (!myBookings || myBookings.length === 0) && (
           <div className="text-center bg-gray-800 p-8 rounded-lg border border-gray-700">
             <h3 className="text-xl font-medium text-white">No Bookings Found</h3>
-            <p className="text-gray-400 mt-2 mb-4">It looks like you haven't booked any spots yet.</p>
+            {/* FIX 2: Replace the apostrophe in "haven't" with '&apos;'. */}
+            <p className="text-gray-400 mt-2 mb-4">It looks like you haven&apos;t booked any spots yet.</p>
             <Link href="/" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">
               Find a Spot
             </Link>
