@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther, keccak256, stringToHex } from 'viem';
-import ParkingContractInfo from '@/lib/ParkingMarketplace.json';
+import { ParkingMarketplaceABI } from '@/lib/ParkingMarketplaceABI';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
 import Image from 'next/image'; // Import Image component
@@ -55,7 +55,7 @@ export default function HostPage() {
     // 2. Call the smart contract
     writeContract({
       address: contractAddress,
-      abi: ParkingContractInfo.abi,
+      abi: ParkingMarketplaceABI,
       functionName: 'createSpot',
       args: [parseEther(rate), secretHash],
     });

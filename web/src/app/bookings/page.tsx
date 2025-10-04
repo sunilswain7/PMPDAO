@@ -1,7 +1,7 @@
 // web/src/app/bookings/page.tsx
 'use client';
 import { useAccount, useReadContract, useReadContracts } from 'wagmi';
-import ParkingContractInfo from '@/lib/ParkingMarketplace.json';
+import { ParkingMarketplaceABI }from '@/lib/ParkingMarketplaceABI';
 import { BookingCard } from '@/components/BookingCard';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -26,17 +26,17 @@ export default function BookingsPage() {
   // Hooks to fetch contract data
   const { data: bookingsCount } = useReadContract({
     address: contractAddress,
-    abi: ParkingContractInfo.abi,
+    abi: ParkingMarketplaceABI,
     functionName: 'bookingsCount',
   });
 
   const bookingsContracts = Array.from({ length: Number(bookingsCount || 0) }, (_, i) => ({
     address: contractAddress,
-    abi: ParkingContractInfo.abi,
+    abi: ParkingMarketplaceABI,
     functionName: 'bookings',
     args: [BigInt(i)],
   }));
-
+  
   const { data: allBookings, isLoading } = useReadContracts({
     contracts: bookingsContracts,
   });
@@ -47,7 +47,8 @@ export default function BookingsPage() {
     .filter(
       (booking) =>
         booking.status === 'success' &&
-        booking.result[1]?.toLowerCase() === address?.toLowerCase()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((booking.result as unknown) as any[])[1]?.toLowerCase() === address?.toLowerCase()
     );
 
   return (
@@ -78,7 +79,7 @@ export default function BookingsPage() {
               key={booking.id}
               bookingId={booking.id}
               // FIX 1 (continued): Use the new type here instead of 'as any'.
-              bookingData={booking.result as BookingDataTuple}
+              bookingData={(booking.result as unknown) as BookingDataTuple}
             />
           ))}
         </div>
