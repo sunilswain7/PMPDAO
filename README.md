@@ -89,11 +89,3 @@ npm install
 npm run dev
 
 ---
-
-⚡ This is now a **ready-to-use `README.md`** file with:  
-- ✅ Badges for professionalism  
-- ✅ Clean sectioning  
-- ✅ Code blocks for setup & deployment  
-- ✅ Future roadmap  
-
-Do you also want me to include a **project architecture diagram** (Markdown + ASCII or MermaidJS) so it’s clear how contracts ↔ frontend ↔ users interact?
