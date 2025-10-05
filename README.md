@@ -40,11 +40,8 @@ The platform uses a **pay-per-use model**:
 - **Foundry**  
 
 ### 💻 Frontend (User Interface)  
-- **Next.js (App Router)** – Fast, modern React framework.  
-- **TypeScript** – Strict typing for blockchain data safety.  
-- **wagmi + viem** – Blockchain interaction layer.  
-- **RainbowKit** – Multi-wallet connection UI.  
-- **Tailwind CSS** – Modern, responsive UI styling.  
+- **Next.js (App Router)**
+- **Tailwind CSS** 
 
 ---
 
