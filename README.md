@@ -36,9 +36,8 @@ The platform uses a **pay-per-use model**:
 ## 🛠️ Tech Stack  
 
 ### 📝 Smart Contract (Backend)  
-- **Solidity `^0.8.24`** – Written with modern best practices.  
-- **Foundry** – Compilation, testing, and deployment.  
-- **OpenZeppelin** – Security via `ReentrancyGuard` and `Ownable`.  
+- **Solidity `^0.8.24`**  
+- **Foundry**  
 
 ### 💻 Frontend (User Interface)  
 - **Next.js (App Router)** – Fast, modern React framework.  
